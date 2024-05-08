@@ -1,0 +1,27 @@
+{
+  "name": "vidio-hosting-backend",
+  "version": "1.0.0",
+  "description": "The complex vidio hosting backend similar to youtube backend with all the functionalities.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Khushwant-Manglani/vidio-hosting-backend.git"
+  },
+  "keywords": [
+    "javascript",
+    "backend",
+    "node",
+    "express",
+    "mongodb",
+    "mongoose"
+  ],
+  "author": "Khushwant Manglani",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Khushwant-Manglani/vidio-hosting-backend/issues"
+  },
+  "homepage": "https://github.com/Khushwant-Manglani/vidio-hosting-backend#readme"
+}
