@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "The complex vidio hosting backend similar to youtube backend with all the functionalities.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.js"
   },
   "repository": {
     "type": "git",
@@ -23,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/Khushwant-Manglani/vidio-hosting-backend/issues"
   },
-  "homepage": "https://github.com/Khushwant-Manglani/vidio-hosting-backend#readme"
+  "homepage": "https://github.com/Khushwant-Manglani/vidio-hosting-backend#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
 }
