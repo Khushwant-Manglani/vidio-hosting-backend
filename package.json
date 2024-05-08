@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/Khushwant-Manglani/vidio-hosting-backend#readme",
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "prettier": "^3.2.5"
   }
 }
