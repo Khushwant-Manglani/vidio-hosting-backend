@@ -17,7 +17,11 @@ app.use(express.urlencoded({ extended: true, limit: REQ_BODY_SIZE_LIMIT }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// have to define routes path
+// routes import
+import userRouter from "./routes/user.routes.js";
+
+// routes declaration
+app.use("/api/v1/users", userRouter);
 
 app.use(errorHandling);
 

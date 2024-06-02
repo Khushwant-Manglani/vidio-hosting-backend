@@ -12,15 +12,15 @@ dotenv.config({
 connectDB()
   .then(() => {
     app.on("error", (err) => {
-      logger.error("MONGODB Connection Failed: ", err);
+      logger.error(`MONGODB Connection Failed: ${err}`);
     });
 
     app.listen(port, () => {
-      logger.info("Server is listening at port: ", port);
+      logger.info(`Server is listening at port: , ${port}`);
     });
   })
   .catch((err) => {
-    logger.error("MONGODB Connection Failed: ", err);
+    logger.error(`MONGODB Connection Failed: ${err}`);
   });
 
 /*
