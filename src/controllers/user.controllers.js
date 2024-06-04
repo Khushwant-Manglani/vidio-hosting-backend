@@ -41,10 +41,14 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // upload avatar and coverImage(if present) on cloudinary
-    const [avatar, coverImage] = Promise.all([
+    const [avatar, coverImage] = await Promise.all([
       uploadOnCloudinary(avatarLocalPath),
-      coverImageLocalPath ? uploadOnCloudinary(coverImage) : null,
+      coverImageLocalPath ? uploadOnCloudinary(coverImageLocalPath) : null,
     ]);
+
+    if (!avatar) {
+      throw new ApiError(500, "Failed to upload avatar on cloudinary");
+    }
 
     // create an user object - store it in database
     const user = new User({
@@ -52,7 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
       email,
       fullName,
       avatar: avatar.url,
-      coverImage: coverImage.url || "",
+      coverImage: coverImage?.url || "",
       password,
     });
 
@@ -75,7 +79,11 @@ const registerUser = asyncHandler(async (req, res) => {
         new ApiResponse(201, userResponse, "User registered successfully ")
       );
   } catch (err) {
-    throw new ApiError(500, "Internal Server Error while register the user");
+    throw new ApiError(
+      500,
+      "Internal Server Error while register the user",
+      err
+    );
   }
 });
 

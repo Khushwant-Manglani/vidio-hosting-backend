@@ -1,8 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import bcryptjs from "bcryptjs";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
 
 const userSchema = Schema(
   {
@@ -54,36 +53,38 @@ const userSchema = Schema(
 );
 
 // using pre hook middleware to hash the password before saving user model
-userSchema.pre(
-  "save",
-  asyncHandler(async function (next) {
-    if (this.isModified("password")) {
-      try {
-        const salt = bcryptjs.genSalt(process.env.saltRounds);
-        const hashedPassword = bcryptjs.hash(this.password, salt);
-        this.password = hashedPassword;
-      } catch (err) {
-        throw ApiError(
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    try {
+      const salt = await bcrypt.genSalt(parseInt(process.env.saltRounds));
+      const hashedPassword = await bcrypt.hash(this.password, salt);
+      this.password = hashedPassword;
+      next();
+    } catch (err) {
+      next(
+        new ApiError(
           500,
           "Something went wrong while hashing the password before saving the userSchema"
-        );
-      }
+        )
+      );
     }
-    next();
-  })
-);
-
-// create custom method for check the provided password is match with the stored hash passsword
-userSchema.methods.isPasswordCorrect = asyncHandler(async function (password) {
-  try {
-    return await bcryptjs.compare(password, this.password);
-  } catch (err) {
-    throw ApiError(500, "Something went wrong while comparing the passwords");
   }
 });
 
+// create custom method for check the provided password is match with the stored hash passsword
+userSchema.methods.isPasswordCorrect = async function (password) {
+  try {
+    return await bcrypt.compare(password, this.password);
+  } catch (err) {
+    throw new ApiError(
+      500,
+      "Something went wrong while comparing the passwords"
+    );
+  }
+};
+
 // create custom method for generate access token
-userSchema.methods.generateAccessToken = asyncHandler(function () {
+userSchema.methods.generateAccessToken = function () {
   try {
     const accessToken = jwt.sign(
       {
@@ -99,15 +100,15 @@ userSchema.methods.generateAccessToken = asyncHandler(function () {
     );
     return accessToken;
   } catch (err) {
-    throw ApiError(
+    throw new ApiError(
       500,
       "Something went wrong while generating an access token"
     );
   }
-});
+};
 
 // create custom method for generate refresh token
-userSchema.methods.generateRefreshToken = asyncHandler(function () {
+userSchema.methods.generateRefreshToken = function () {
   try {
     const refreshToken = jwt.sign(
       {
@@ -120,11 +121,11 @@ userSchema.methods.generateRefreshToken = asyncHandler(function () {
     );
     return refreshToken;
   } catch (err) {
-    throw ApiError(
+    throw new ApiError(
       500,
       "Something went wrong while generating an refresh token"
     );
   }
-});
+};
 
 export const User = mongoose.model("User", userSchema);
