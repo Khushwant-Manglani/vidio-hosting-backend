@@ -68,6 +68,8 @@ userSchema.pre("save", async function (next) {
         )
       );
     }
+  } else {
+    next();
   }
 });
 

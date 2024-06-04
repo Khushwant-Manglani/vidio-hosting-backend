@@ -4,6 +4,27 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessTokenAndRefreshToken = async (user) => {
+  try {
+    // user is object of our user model we have given the methods in user model
+    // to generate access and refresh token
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    // update the refreshToken in user object
+    user.refreshToken = refreshToken;
+    // save the object and doesn't validate before save bcz password in required in model
+    await user.save({ validateBeforeSave: false });
+    // return the access and refresh token
+    return { accessToken, refreshToken };
+  } catch (err) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating an access and refresh token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   try {
     // get the user details from frontend
@@ -87,4 +108,64 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  try {
+    // get the user details from frontend
+    const { username, email, password } = req.body;
+
+    // validate - if username or email is empty
+    if (!username || !email) {
+      throw new ApiError(400, "username or email is required");
+    }
+
+    // check if user is present or not in database
+    const loggedInUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (!loggedInUser) {
+      throw new ApiError(404, "user doesn't exist in database");
+    }
+
+    // compare the passwords ( provided password and hashed password(of loggedInUser in db) )
+    const isValidPassword = await loggedInUser.isPasswordCorrect(password);
+
+    if (!isValidPassword) {
+      throw new ApiError(401, "Invalid credentials");
+    }
+
+    // generate the access and refresh token
+    const { accessToken, refreshToken } =
+      await generateAccessTokenAndRefreshToken(loggedInUser);
+
+    // omit the password and refreshToken from loggedInUser to send the response
+    await loggedInUser.select(["password", "refreshToken"]);
+
+    // create secure options for cookies
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    // set the accessToken and refreshToken in cookies and send the response
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user: loggedInUser,
+            accessToken,
+            refreshToken,
+          },
+          "User logged in successfully"
+        )
+      );
+  } catch (err) {
+    throw new ApiError(500, "Something went wrong while login the user");
+  }
+});
+
+export { registerUser, loginUser };
