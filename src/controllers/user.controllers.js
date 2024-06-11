@@ -33,7 +33,7 @@ class UserController {
       );
 
       // create secure options for cookies
-      const options = {
+      const cookieOptions = {
         httpOnly: true,
         secure: true,
         sameSite: "strict", // add sameSite attribute for better security
@@ -42,8 +42,8 @@ class UserController {
       // set the accessToken and refreshToken in cookies and send the response
       res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
         .json(
           new ApiResponse(
             200,
@@ -57,6 +57,14 @@ class UserController {
         );
     } catch (err) {
       throw new ApiError(500, "Something went wrong while login the user", err);
+    }
+  });
+
+  logoutUser = asyncHandler(async (req, res) => {
+    try {
+      await authService.logoutUser(req.user, res);
+    } catch (err) {
+      throw ApiError(500, "Something went wrong while logout the user", err);
     }
   });
 }
