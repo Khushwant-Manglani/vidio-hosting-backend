@@ -3,7 +3,11 @@ import { uploadOnCloudinary } from "../utils/cloudinary";
 import { ApiError } from "../utils/ApiError";
 
 class UserService {
-  // Validates user data to ensure no field is empty
+  /**
+   * Validates user data to ensure no field is empty.
+   * @param {Object} userData - The user data from the request.
+   * @throws Will throw an error if any field is empty.
+   */
   validateUserData(userData) {
     // get the user details
     const { username, email, fullName, password } = userData;
@@ -14,7 +18,13 @@ class UserService {
     }
   }
 
-  // Checks if a user with the provided username or email already exists
+  /**
+   * Checks if a user with the provided username or email already exists.
+   * @param {String} username - The username to check.
+   * @param {String} email - The email to check.
+   * @returns {Promise<void>}
+   * @throws Will throw an error if a user with the username or email already exists.
+   */
   async checkExistingUser(username, email) {
     // retrieve the user from database
     const existingUser = await User.findOne({
@@ -26,7 +36,12 @@ class UserService {
     }
   }
 
-  // Retrieves the local path of an image file from the uploaded files
+  /**
+   * Retrieves the local path of an image file from the uploaded files.
+   * @param {Object} files - The files uploaded.
+   * @param {String} fieldName - The name of the field containing the image.
+   * @returns {String|null} The local path of the image file, or null if not found.
+   */
   getImageLocalPath(files, fieldName) {
     if (
       files &&
@@ -41,7 +56,12 @@ class UserService {
     return null;
   }
 
-  // Uploads the avatar and cover image (if present) to Cloudinary
+  /**
+   * Uploads the avatar and cover image (if present) to Cloudinary.
+   * @param {Object} files - The files uploaded.
+   * @returns {Object} An object containing the URLs of the uploaded images.
+   * @throws Will throw an error if the avatar upload fails or if the avatar file is missing.
+   */
   async uploadImage(files) {
     // get the local path of avatar
     const avatarLocalPath = this.getImageLocalPath(files, "avatar");
@@ -62,10 +82,16 @@ class UserService {
       throw new ApiError(500, "Failed to upload avatar on cloudinary");
     }
 
-    return { avatarUrl: avatar, coverImageUrl: coverImage?.url || "" };
+    return { avatarUrl: avatar.url, coverImageUrl: coverImage?.url || "" };
   }
 
-  // Creates a new user with the provided data and files
+  /**
+   * Creates a new user with the provided data and files.
+   * @param {Object} userData - The user data from the request.
+   * @param {Object} files - The files uploaded.
+   * @returns {Object} The created user without sensitive information.
+   * @throws Will throw an error if any step in the process fails.
+   */
   async createUser(userData, files) {
     try {
       // get the user details from request by destructure

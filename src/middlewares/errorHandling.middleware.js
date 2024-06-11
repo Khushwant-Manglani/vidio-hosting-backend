@@ -16,7 +16,7 @@ const errorHandling = (err, req, res, next) => {
   };
 
   logger.error(errorDetails);
-  res.status(err.statusCode).json(errorDetails);
+  res.status(statusCode).json(errorDetails);
 };
 
 export { errorHandling };

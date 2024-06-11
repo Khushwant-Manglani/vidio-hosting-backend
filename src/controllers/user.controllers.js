@@ -19,7 +19,7 @@ class UserController {
       // handle the error
       throw new ApiError(
         500,
-        "Internal Server Error while register the user",
+        "Somthing went wrong while register the user",
         err
       );
     }
