@@ -18,7 +18,8 @@ router.route("/register").post(
   ]),
   userController.registerUser
 );
-router.route("/login", userController.loginUser);
-router.route("/logout", verifyJWT, userController.logoutUser);
+router.route("/login").post(userController.loginUser);
+router.route("/logout").post(verifyJWT, userController.logoutUser);
+router.route("/refresh-token").post(userController.refreshAccessToken);
 
 export default router;

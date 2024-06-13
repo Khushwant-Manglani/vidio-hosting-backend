@@ -28,15 +28,14 @@ class UserController {
   loginUser = asyncHandler(async (req, res) => {
     try {
       // get the details of login user
-      const { user, accessToken, refreshToken } = authService.authenticateUser(
-        req.body
-      );
+      const { user, accessToken, refreshToken } =
+        await authService.authenticateUser(req.body);
 
       // create secure options for cookies
       const cookieOptions = {
         httpOnly: true,
         secure: true,
-        sameSite: "strict", // add sameSite attribute for better security
+        // sameSite: "strict", // add sameSite attribute for better security
       };
 
       // set the accessToken and refreshToken in cookies and send the response
@@ -64,7 +63,51 @@ class UserController {
     try {
       await authService.logoutUser(req.user, res);
     } catch (err) {
-      throw ApiError(500, "Something went wrong while logout the user", err);
+      throw new ApiError(
+        500,
+        "Something went wrong while logout the user",
+        err
+      );
+    }
+  });
+
+  /**
+   * Refresh the access token using the provided refresh token.
+   * @param {object} req - the request object
+   * @param {object} res - the response object
+   * @throw Will throw the error when refresh token is invalid or missing
+   */
+
+  refreshAccessToken = asyncHandler(async (req, res) => {
+    try {
+      const incommingRefreshToken =
+        req.cookies.refreshToken || req.body.refreshToken;
+
+      if (!incommingRefreshToken) {
+        throw new ApiError(401, "Unauthorized access");
+      }
+
+      const { accessToken, refreshToken } = await authService.refreshTokens(
+        incommingRefreshToken
+      );
+
+      res
+        .status(200)
+        .cookie("accessToken", accessToken)
+        .cookie("refreshToken", refreshToken)
+        .json(
+          new ApiResponse(
+            200,
+            { accessToken, refreshToken },
+            "Access token refreshed successfully"
+          )
+        );
+    } catch (err) {
+      throw new ApiError(
+        401,
+        "Something went wrong while refresh the access token",
+        err
+      );
     }
   });
 }

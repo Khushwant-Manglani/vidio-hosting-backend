@@ -1,5 +1,7 @@
-import { User } from "../models/user.model";
-import { ApiError } from "../utils/ApiError";
+import { User } from "../models/user.model.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
+import jwt from "jsonwebtoken";
 
 class AuthService {
   /**
@@ -39,7 +41,7 @@ class AuthService {
     const { username, email } = userData;
 
     // validate - if username or email is doesn't exist
-    if (!username || !email) {
+    if (!username && !email) {
       throw new ApiError(400, "username or email is required");
     }
   }
@@ -104,6 +106,26 @@ class AuthService {
   }
 
   /**
+   * Clear the user refresh token from database
+   * @param {string} userId - the ID of the user
+   * @returns {Promise} - The promise object representing the update operation
+   */
+  async clearUserRefreshToken(userId) {
+    // find user by id and update the refreshToken to undefined
+    return await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          refreshToken: undefined,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+  }
+
+  /**
    * Logout user by clearing their refresh token and cookies
    * @param {object} user - the user object.
    * @param {object} res - the response object
@@ -112,18 +134,7 @@ class AuthService {
    */
   async logoutUser(user, res) {
     try {
-      // find user by id and update the refreshToken to undefined
-      await findByIdAndUpdate(
-        user._id,
-        {
-          $set: {
-            refreshToken: undefined,
-          },
-        },
-        {
-          new: true,
-        }
-      );
+      await this.clearUserRefreshToken(user._id);
 
       // create secure cookie options
       const cookieOptions = {
@@ -139,7 +150,41 @@ class AuthService {
         .clearCookie("refreshToken", cookieOptions)
         .json(new ApiResponse(200, {}, "User logged out Successfully"));
     } catch (err) {
-      throw new ApiError(500, "Error logging out user", err);
+      throw new ApiError(500, err || "Error logging out user");
+    }
+  }
+
+  /**
+   * Refreshes the access and refresh tokens
+   * @param {string} incomingRefreshToken - the incoming refresh token.
+   * @return {Promise<Object>} The new access and refresh token.
+   * @throws Will throw an error if the refresh token is invalid or expired
+   */
+
+  async refreshTokens(incomingRefreshToken) {
+    try {
+      // verify refresh token and decode the payload
+      const decoded = await jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+
+      // retrieve the user by token payload
+      const user = await User.findById(decoded._id);
+
+      if (!user) {
+        throw new ApiError(401, "Invalid refresh token");
+      }
+
+      // check if the provided refresh token and store database refresh token match or not
+      if (incomingRefreshToken !== user?.refreshToken) {
+        throw new ApiError(401, "Refresh token is expired or used");
+      }
+
+      // return the newly generated access and refresh token
+      return await this.generateAccessTokenAndRefreshToken(user);
+    } catch (err) {
+      throw new ApiError(401, err.message);
     }
   }
 }

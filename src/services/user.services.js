@@ -1,6 +1,6 @@
-import { User } from "../models/user.model";
-import { uploadOnCloudinary } from "../utils/cloudinary";
-import { ApiError } from "../utils/ApiError";
+import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiError } from "../utils/ApiError.js";
 
 class UserService {
   /**

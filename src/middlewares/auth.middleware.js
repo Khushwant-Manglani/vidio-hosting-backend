@@ -1,6 +1,6 @@
-import { ApiError } from "../utils/ApiError";
-import { asyncHandler } from "../utils/asyncHandler";
-import { User } from "../models/user.model";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 
 /**
@@ -15,7 +15,7 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
     // Extract the token from cookies or Authorization header
     const token =
-      req.cookies.accessToken || req.header("Authorization").split(" ")[1];
+      req.cookies.accessToken || req.header("Authorization")?.split(" ")[1];
 
     if (!token) {
       throw new ApiError(401, "Access denied, token not found.");
