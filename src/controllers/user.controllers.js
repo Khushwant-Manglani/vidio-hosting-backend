@@ -2,7 +2,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.services.js";
-import { User } from "../models/user.model.js";
 
 class UserController {
   registerUser = asyncHandler(async (req, res) => {
@@ -25,7 +24,7 @@ class UserController {
     }
   });
 
-  changeCurrentPassword = asyncHandler(async (req, res) => {
+  changeCurrentUserPassword = asyncHandler(async (req, res) => {
     try {
       // get the password details from frontend
       const { oldPassword, newPassword } = req.body;
@@ -46,6 +45,54 @@ class UserController {
       throw new ApiError(
         500,
         "Something went wrong while changing the password",
+        err
+      );
+    }
+  });
+
+  getCurrentUser = asyncHandler(async (req, res) => {
+    // we verify user token in verifyJWT middleware and get req.user without password and refreshToken
+    // send the responce of the current user by req.user
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, req.user, "Current user fetched successfully")
+      );
+  });
+
+  updateUserAccountDetails = asyncHandler(async (req, res) => {
+    try {
+      // get the details from frontend
+      const { fullName, email } = req.body;
+
+      // validate bcz both field are required
+      if (!fullName && !email) {
+        throw new ApiError(400, "All fields are required");
+      }
+
+      // we verify user token in verifyJWT middleware and get req.user without password and refreshToken
+      // we retrive the user by req.user._id and then update the fullName and email and ommiting the password
+      // and get the updated user
+      const updatedUser = await userService.updateUserDetails(
+        req.user._id,
+        fullName,
+        email
+      );
+
+      // send the updated details user response
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            updatedUser,
+            "User details are updated successfully"
+          )
+        );
+    } catch (err) {
+      throw new ApiError(
+        500,
+        "Something went wrong while updating the user details",
         err
       );
     }

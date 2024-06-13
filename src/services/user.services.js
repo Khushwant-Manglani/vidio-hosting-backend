@@ -162,6 +162,38 @@ class UserService {
     // save the user
     await user.save({ validateBeforeSave: false });
   }
+
+  /**
+   * Update the user details in database
+   * @param {string} userId - the ID of the user whose details will be update
+   * @param {string} fullName - the updated fullName
+   * @param {string} email - the updated email
+   * @returns {Promise<object>} the updated user object
+   * @throws Will throw the error if the user not retrive or update fails
+   */
+  async updateUserDetails(userId, fullName, email) {
+    // retrive the user by req.user._id and update the fullName and email and saving the new document and ommiting the password
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          fullName,
+          email,
+        },
+      },
+      {
+        new: true,
+      }
+    ).select("-password");
+
+    // if user not found or update fails
+    if (!updatedUser) {
+      throw new ApiError(404, "User not found or update got fails");
+    }
+
+    // return the updated user
+    return updatedUser;
+  }
 }
 
 // export an instance of the UserService Class

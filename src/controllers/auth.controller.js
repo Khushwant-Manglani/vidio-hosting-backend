@@ -38,9 +38,29 @@ class AuthController {
     }
   });
 
+  /**
+   * Logout user by clearing their refresh token and cookies
+   * @param {object} req - the req object.
+   * @param {object} res - the response object
+   * @throws Will throw the error if the user logout fails
+   */
   logoutUser = asyncHandler(async (req, res) => {
     try {
-      await authService.logoutUser(req.user, res);
+      await authService.clearUserRefreshToken(req.user._id);
+
+      // create secure cookie options
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict", // add sameSite attribute for better security
+      };
+
+      // send the response and clear the access and refresh token from cookies
+      res
+        .status(200)
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
+        .json(new ApiResponse(200, {}, "User logged out Successfully"));
     } catch (err) {
       throw new ApiError(
         500,

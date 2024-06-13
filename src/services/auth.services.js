@@ -1,5 +1,4 @@
 import { User } from "../models/user.model.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 
@@ -112,31 +111,6 @@ class AuthService {
         new: true,
       }
     );
-  }
-
-  /**
-   * Logout user by clearing their refresh token and cookies
-   * @param {object} user - the user object.
-   * @param {object} res - the response object
-   * @returns {object} - The API response
-   * @throws Will throw the error if the user logout fails
-   */
-  async logoutUser(user, res) {
-    await this.clearUserRefreshToken(user._id);
-
-    // create secure cookie options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict", // add sameSite attribute for better security
-    };
-
-    // send the response and clear the access and refresh token from cookies
-    res
-      .status(200)
-      .clearCookie("accessToken", cookieOptions)
-      .clearCookie("refreshToken", cookieOptions)
-      .json(new ApiResponse(200, {}, "User logged out Successfully"));
   }
 
   /**
