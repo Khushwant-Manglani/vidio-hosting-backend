@@ -93,46 +93,74 @@ class UserService {
    * @throws Will throw an error if any step in the process fails.
    */
   async createUser(userData, files) {
-    try {
-      // get the user details from request by destructure
-      const { username, email, fullName, password } = userData;
+    // get the user details from request by destructure
+    const { username, email, fullName, password } = userData;
 
-      // validate the user data
-      this.validateUserData(userData);
+    // validate the user data
+    this.validateUserData(userData);
 
-      // check if user present by username or email
-      await this.checkExistingUser(username, email);
+    // check if user present by username or email
+    await this.checkExistingUser(username, email);
 
-      const { avatarUrl, coverImageUrl } = await this.uploadImage(files);
+    const { avatarUrl, coverImageUrl } = await this.uploadImage(files);
 
-      // create an user object - save it in database
-      const user = new User({
-        username: username.toLowerCase(),
-        email,
-        fullName,
-        avatar: avatarUrl,
-        coverImage: coverImageUrl,
-        password,
-      });
+    // create an user object - save it in database
+    const user = new User({
+      username: username.toLowerCase(),
+      email,
+      fullName,
+      avatar: avatarUrl,
+      coverImage: coverImageUrl,
+      password,
+    });
 
-      const createdUser = await user.save();
+    const createdUser = await user.save();
 
-      // retrieve the user by id from the database and omit(remove) the password and refreshToken
-      const userResponse = await User.findById(createdUser._id).select([
-        "-password",
-        "-refreshToken",
-      ]);
+    // retrieve the user by id from the database and omit(remove) the password and refreshToken
+    const userResponse = await User.findById(createdUser._id).select([
+      "-password",
+      "-refreshToken",
+    ]);
 
-      if (!userResponse) {
-        throw new ApiError(500, "Failed to retrieve the created user");
-      }
-
-      // return the response
-      return userResponse;
-    } catch (err) {
-      // throw the error that can be handle in catch of route
-      throw err;
+    if (!userResponse) {
+      throw new ApiError(500, "Failed to retrieve the created user");
     }
+
+    // return the response
+    return userResponse;
+  }
+
+  /**
+   * Change the password for a user
+   * @param {string} userId - the ID of the user whose password will be change
+   * @param {string} oldPassword - the current password of the user
+   * @param {string} newPassword - the new password to set for the user
+   * @returns {Promise<void>} Promise that resolve when password is successfully changed
+   * @throws Will throw the error if the old password is incorrect or saving fails in db
+   */
+  async changePassword(userId, oldPassword, newPassword) {
+    // we have the access of user(which is req.user) with out password and refreshToken
+    // bcz we verify user token in verifyJWT middleware and get user without password and refreshToken
+    // thats why for find the user password we have to retrive the user from req.user._id
+    const user = await User.findById(userId);
+
+    // check that the oldPassword is match with hash password in db
+    // we have declared isPasswordCorrect method in user model so we are using that
+
+    const isPasswordValid = await user.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordValid) {
+      throw new ApiError(
+        400,
+        "Invalid password provided, check your password and try again."
+      );
+    }
+
+    // old password is valid now change the password
+    user.password = newPassword;
+
+    // save the user
+    await user.save({ validateBeforeSave: false });
   }
 }
 

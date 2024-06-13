@@ -11,24 +11,17 @@ class AuthService {
    * @throws Will throw an error if the token generation fails
    */
   async generateAccessTokenAndRefreshToken(user) {
-    try {
-      const accessToken = user.generateAccessToken();
-      const refreshToken = user.generateRefreshToken();
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
-      // update the refreshToken in user object
-      user.refreshToken = refreshToken;
+    // update the refreshToken in user object
+    user.refreshToken = refreshToken;
 
-      // save the object and doesn't validate before save bcz password in required in model
-      await user.save({ validateBeforeSave: false });
+    // save the object and doesn't validate before save bcz password in required in model
+    await user.save({ validateBeforeSave: false });
 
-      // return the access and refresh token
-      return { accessToken, refreshToken };
-    } catch (err) {
-      throw new ApiError(
-        500,
-        "Something went wrong while generating an access and refresh token"
-      );
-    }
+    // return the access and refresh token
+    return { accessToken, refreshToken };
   }
 
   /**
@@ -73,36 +66,32 @@ class AuthService {
    * @throws Will throw an error if authentication fails.
    */
   async authenticateUser(userData) {
-    try {
-      this.validateUserData(userData);
+    this.validateUserData(userData);
 
-      // get the user details from frontend
-      const { username, email, password } = userData;
+    // get the user details from frontend
+    const { username, email, password } = userData;
 
-      // find the user from the db
-      const user = await this.findUser(username, email);
+    // find the user from the db
+    const user = await this.findUser(username, email);
 
-      // compare the passwords ( provided password and hashed password(of loggedInUser in db) )
-      const isValidPassword = await user.isPasswordCorrect(password);
+    // compare the passwords ( provided password and hashed password(of loggedInUser in db) )
+    const isValidPassword = await user.isPasswordCorrect(password);
 
-      if (!isValidPassword) {
-        throw new ApiError(401, "Invalid credentials");
-      }
-
-      // generate the access and refresh token
-      const tokens = await this.generateAccessTokenAndRefreshToken(user);
-
-      // omit the password and refreshToken from user for sending the response
-      const {
-        password: omitPassword,
-        refreshToken: omitRefreshToken,
-        ...userWithoutSensitiveInfo
-      } = user.toObject();
-
-      return { user: userWithoutSensitiveInfo, ...tokens };
-    } catch (err) {
-      throw err;
+    if (!isValidPassword) {
+      throw new ApiError(401, "Invalid credentials");
     }
+
+    // generate the access and refresh token
+    const tokens = await this.generateAccessTokenAndRefreshToken(user);
+
+    // omit the password and refreshToken from user for sending the response
+    const {
+      password: omitPassword,
+      refreshToken: omitRefreshToken,
+      ...userWithoutSensitiveInfo
+    } = user.toObject();
+
+    return { user: userWithoutSensitiveInfo, ...tokens };
   }
 
   /**
@@ -133,25 +122,21 @@ class AuthService {
    * @throws Will throw the error if the user logout fails
    */
   async logoutUser(user, res) {
-    try {
-      await this.clearUserRefreshToken(user._id);
+    await this.clearUserRefreshToken(user._id);
 
-      // create secure cookie options
-      const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict", // add sameSite attribute for better security
-      };
+    // create secure cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict", // add sameSite attribute for better security
+    };
 
-      // send the response and clear the access and refresh token from cookies
-      res
-        .status(200)
-        .clearCookie("accessToken", cookieOptions)
-        .clearCookie("refreshToken", cookieOptions)
-        .json(new ApiResponse(200, {}, "User logged out Successfully"));
-    } catch (err) {
-      throw new ApiError(500, err || "Error logging out user");
-    }
+    // send the response and clear the access and refresh token from cookies
+    res
+      .status(200)
+      .clearCookie("accessToken", cookieOptions)
+      .clearCookie("refreshToken", cookieOptions)
+      .json(new ApiResponse(200, {}, "User logged out Successfully"));
   }
 
   /**
@@ -162,30 +147,26 @@ class AuthService {
    */
 
   async refreshTokens(incomingRefreshToken) {
-    try {
-      // verify refresh token and decode the payload
-      const decoded = await jwt.verify(
-        incomingRefreshToken,
-        process.env.REFRESH_TOKEN_SECRET
-      );
+    // verify refresh token and decode the payload
+    const decoded = await jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
 
-      // retrieve the user by token payload
-      const user = await User.findById(decoded._id);
+    // retrieve the user by token payload
+    const user = await User.findById(decoded._id);
 
-      if (!user) {
-        throw new ApiError(401, "Invalid refresh token");
-      }
-
-      // check if the provided refresh token and store database refresh token match or not
-      if (incomingRefreshToken !== user?.refreshToken) {
-        throw new ApiError(401, "Refresh token is expired or used");
-      }
-
-      // return the newly generated access and refresh token
-      return await this.generateAccessTokenAndRefreshToken(user);
-    } catch (err) {
-      throw new ApiError(401, err.message);
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
     }
+
+    // check if the provided refresh token and store database refresh token match or not
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    // return the newly generated access and refresh token
+    return await this.generateAccessTokenAndRefreshToken(user);
   }
 }
 
