@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { userService } from "../services/user.services.js";
+import { User } from "../models/user.model.js";
+import UserService from "../services/user.services.js";
+
+const userService = new UserService(User); // inject User model dependency
 
 class UserController {
   registerUser = asyncHandler(async (req, res) => {
@@ -93,6 +96,48 @@ class UserController {
       throw new ApiError(
         500,
         "Something went wrong while updating the user details",
+        err
+      );
+    }
+  });
+
+  updateUserAvatar = asyncHandler(async (req, res) => {
+    try {
+      const updatedUser = await userService.updateUserFileImage(
+        req.user._id,
+        req.file,
+        "avatar"
+      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, updatedUser, "Avatar image updated successfully")
+        );
+    } catch (err) {
+      throw new ApiError(
+        500,
+        "Something went wrong while updating an avatar",
+        err
+      );
+    }
+  });
+
+  updateUserCoverImage = asyncHandler(async (req, res) => {
+    try {
+      const updatedUser = await userService.updateUserFileImage(
+        req.user._id,
+        req.file,
+        "coverImage"
+      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, updatedUser, "Cover image updated successfully")
+        );
+    } catch (err) {
+      throw new ApiError(
+        500,
+        "Something went wrong while updating an cover image",
         err
       );
     }

@@ -1,8 +1,11 @@
-import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 
 class AuthService {
+  constructor(UserModel) {
+    this.User = UserModel;
+  }
+
   /**
    * Generate an access and refresh tokens for a given user
    * @param {object} user - the user object
@@ -47,7 +50,7 @@ class AuthService {
    */
   async findUser(username, email) {
     // check if user is present or not in database
-    const user = await User.findOne({
+    const user = await this.User.findOne({
       $or: [{ username }, { email }],
     });
 
@@ -100,7 +103,7 @@ class AuthService {
    */
   async clearUserRefreshToken(userId) {
     // find user by id and update the refreshToken to undefined
-    return await User.findByIdAndUpdate(
+    return await this.User.findByIdAndUpdate(
       userId,
       {
         $set: {
@@ -128,7 +131,7 @@ class AuthService {
     );
 
     // retrieve the user by token payload
-    const user = await User.findById(decoded._id);
+    const user = await this.User.findById(decoded._id);
 
     if (!user) {
       throw new ApiError(401, "Invalid refresh token");
@@ -144,5 +147,5 @@ class AuthService {
   }
 }
 
-// Export an instance of AuthService
-export const authService = new AuthService();
+// export the AuthService class
+export default AuthService;

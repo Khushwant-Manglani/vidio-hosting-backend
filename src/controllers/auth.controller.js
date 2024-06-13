@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { authService } from "../services/auth.services.js";
+import { User } from "../models/user.model.js";
+import AuthService from "../services/auth.services.js";
+
+const authService = new AuthService(User); // inject user model dependency
 
 class AuthController {
   loginUser = asyncHandler(async (req, res) => {

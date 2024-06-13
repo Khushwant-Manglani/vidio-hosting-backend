@@ -1,8 +1,11 @@
-import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class UserService {
+  constructor(UserModel) {
+    this.User = UserModel;
+  }
+
   /**
    * Validates user data to ensure no field is empty.
    * @param {Object} userData - The user data from the request.
@@ -27,7 +30,7 @@ class UserService {
    */
   async checkExistingUser(username, email) {
     // retrieve the user from database
-    const existingUser = await User.findOne({
+    const existingUser = await this.User.findOne({
       $or: [{ username }, { email }],
     });
 
@@ -105,7 +108,7 @@ class UserService {
     const { avatarUrl, coverImageUrl } = await this.uploadImage(files);
 
     // create an user object - save it in database
-    const user = new User({
+    const user = new this.User({
       username: username.toLowerCase(),
       email,
       fullName,
@@ -117,7 +120,7 @@ class UserService {
     const createdUser = await user.save();
 
     // retrieve the user by id from the database and omit(remove) the password and refreshToken
-    const userResponse = await User.findById(createdUser._id).select([
+    const userResponse = await this.User.findById(createdUser._id).select([
       "-password",
       "-refreshToken",
     ]);
@@ -142,7 +145,7 @@ class UserService {
     // we have the access of user(which is req.user) with out password and refreshToken
     // bcz we verify user token in verifyJWT middleware and get user without password and refreshToken
     // thats why for find the user password we have to retrive the user from req.user._id
-    const user = await User.findById(userId);
+    const user = await this.User.findById(userId);
 
     // check that the oldPassword is match with hash password in db
     // we have declared isPasswordCorrect method in user model so we are using that
@@ -173,7 +176,7 @@ class UserService {
    */
   async updateUserDetails(userId, fullName, email) {
     // retrive the user by req.user._id and update the fullName and email and saving the new document and ommiting the password
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedUser = await this.User.findByIdAndUpdate(
       userId,
       {
         $set: {
@@ -194,7 +197,52 @@ class UserService {
     // return the updated user
     return updatedUser;
   }
+
+  /**
+   * Update user file image (eg. avatar or coverImage).
+   * @param {string} userId - The ID of the user.
+   * @param {string} file - The file object containing the image.
+   * @param {string} fieldName - The name of the field to update (eg. avatar etc).
+   * @returns {Promise<Object>} The updated user object.
+   * @throws Will throw the error if the filePath is missing or upload fails.
+   */
+  async updateUserFileImage(userId, file, fieldName) {
+    // check if file exist then its path exist, get the file path from req.file
+    if (!file || !file.path) {
+      throw new ApiError("400", `${fieldName} file path is required`);
+    }
+
+    // upload the file to cloudinary
+    const uploadFile = await uploadOnCloudinary(file.path);
+
+    // check if file uploads and get the url
+    if (!uploadFile || !uploadFile.url) {
+      throw new ApiError("400", `Error while uploading ${fieldName} file`);
+    }
+
+    // To update the file url, we have to create the updateObject bcz we have a fileName as string
+    // create update object with dynamic field name
+    const updatedObject = { $set: {} };
+    updatedObject.$set[fieldName] = uploadFile.url;
+
+    // retrieve user by id and update the field given in updatedObject and save the document
+    const updatedUser = await this.User.findByIdAndUpdate(
+      userId,
+      updatedObject,
+      {
+        new: true,
+      }
+    ).select("-password");
+
+    // if user not found or update fails
+    if (!updatedUser) {
+      throw new ApiError(404, "User not found or update got fails");
+    }
+
+    // return the updated user
+    return updatedUser;
+  }
 }
 
-// export an instance of the UserService Class
-export const userService = new UserService();
+// export the UserService Class
+export default UserService;
