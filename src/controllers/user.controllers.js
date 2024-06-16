@@ -142,6 +142,39 @@ class UserController {
       );
     }
   });
+
+  getUserChannelProfile = asyncHandler(async (req, res) => {
+    try {
+      const { username } = req.params.username;
+
+      // check username exist and trim it
+      if (!username?.trim()) {
+        throw new ApiError(400, "Username is required.");
+      }
+
+      // get the username from params and user id from req.user._id
+      const channelDetails = await userService.channelProfileDetails(
+        username,
+        req.user?._id
+      );
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            channelDetails,
+            "User channel profile details fetched successfully."
+          )
+        );
+    } catch (err) {
+      throw new ApiError(
+        500,
+        "Something went wrong while fetching the user channel profile details",
+        err
+      );
+    }
+  });
 }
 
 export const userController = new UserController();

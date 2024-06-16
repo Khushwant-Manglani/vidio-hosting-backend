@@ -242,6 +242,80 @@ class UserService {
     // return the updated user
     return updatedUser;
   }
+
+  /**
+   * Get the user channel profile details by using aggregation pipeline
+   * @param {string} userId - The ID of the user.
+   * @param {string} username - the username of the user.
+   * @returns {object} The channel profile details object.
+   * @throws Will throw the error if the channel profile details not able to fetched.
+   */
+  async channelProfileDetails(userId, username) {
+    // now we will write aggregation pipeline and find the channel total subscriber and total channel subscribed by user
+    const channel = await this.User.aggregate([
+      {
+        // match the user doc. by username
+        $match: {
+          username: username?.toLowerCase(),
+        },
+      },
+      {
+        // now we have to lookup in subscription model and find all document of subscriber by pickup the channel as a user
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
+      },
+      {
+        // now we have to lookup again in subscription model but find all document of channel by pickup the subscriber as a user
+        $lookup: {
+          from: "subscribers",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subscribedTo",
+        },
+      },
+      {
+        // now we have to add some more fields in document
+        $addFields: {
+          subscriberCount: {
+            $size: "$subscribers",
+          },
+          channelsSubscribedToCount: {
+            $size: "$subscribedTo",
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [userId, "$subscribers.subscriber"] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        // now we will project the fields means decide what fields to take and rest fields will already neglect
+        $project: {
+          fullName: 1,
+          username: 1,
+          avatar: 1,
+          coverImage: 1,
+          subscriberCount: 1,
+          channelsSubscribedToCount: 1,
+          isSubscribed: 1,
+          email: 1,
+        },
+      },
+    ]);
+
+    if (!channel || !channel.length) {
+      throw new ApiError(400, "Failed to get user channel details");
+    }
+
+    return channel[0];
+  }
 }
 
 // export the UserService Class
